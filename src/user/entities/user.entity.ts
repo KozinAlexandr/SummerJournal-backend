@@ -1,5 +1,11 @@
-import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
-import { IsEmail } from 'class-validator';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from 'typeorm';
+
 @Entity('users')
 export class UserEntity {
   @PrimaryGeneratedColumn()
@@ -9,9 +15,15 @@ export class UserEntity {
   fullName: string;
 
   @Column()
-  @IsEmail()
   email: string;
-
+  //пароль опционален из-за подключение через соц сети
+  //если регаться через почту то он нужен
   @Column({ nullable: true })
   password?: string;
+
+  @CreateDateColumn({ type: 'timestamp' })
+  createdAt: Date;
+
+  @UpdateDateColumn({ type: 'timestamp' })
+  updatedAt: Date;
 }

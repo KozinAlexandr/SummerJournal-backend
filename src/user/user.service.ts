@@ -16,14 +16,14 @@ export class UserService {
   }
 
   findAll() {
-    return `This action returns all user`;
+    return this.repository.find();
   }
 
   findOne(id: number) {
     return `This action returns a #${id} user`;
   }
 
-  update(id: number, updateUserDto: UpdateUserDto) {
+  update(id: number, dto: UpdateUserDto) {
     return `This action updates a #${id} user`;
   }
 
