@@ -14,10 +14,10 @@ export class UserEntity {
   @Column()
   fullName: string;
 
-  @Column()
+  @Column({ unique: true })
   email: string;
   //пароль опционален из-за подключение через соц сети
-  //если регаться через почту то он нужен
+  //если регаться через почту то он нужен ^^
   @Column({ nullable: true })
   password?: string;
 

@@ -5,6 +5,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { UserEntity } from './entities/user.entity';
 import { Repository } from 'typeorm';
 import { LoginUserDto } from './dto/login-user.dto';
+import { SearchUserDto } from './dto/search-user.dto';
 
 @Injectable()
 export class UserService {
@@ -30,10 +31,30 @@ export class UserService {
   }
 
   update(id: number, dto: UpdateUserDto) {
-    return `This action updates a #${id} user`;
+    return this.repository.update(id, dto);
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} user`;
+  async search(dto: SearchUserDto) {
+    const qb = this.repository.createQueryBuilder('u');
+
+    qb.limit(dto.limit || 0);
+    qb.take(dto.take || 10);
+
+    if (dto.fullName) {
+      qb.andWhere(`u.fullName LIKE :fullName`); //maybe ilike ?
+    }
+
+    if (dto.email) {
+      qb.andWhere(`u.email LIKE :email`);
+    }
+
+    qb.setParameters({
+      email: `%${dto.email}%`,
+      fullName: `%${dto.fullName}%`,
+    });
+
+    const [items, total] = await qb.getManyAndCount();
+
+    return { items, total };
   }
 }

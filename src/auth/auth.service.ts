@@ -1,17 +1,18 @@
-import { Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable } from '@nestjs/common';
 import { UserService } from '../user/user.service';
 import { UserEntity } from '../user/entities/user.entity';
 import { JwtService } from '@nestjs/jwt';
+import { CreateUserDto } from '../user/dto/create-user.dto';
 
 @Injectable()
 export class AuthService {
   constructor(
-    private usersService: UserService,
+    private userService: UserService,
     private jwtService: JwtService,
   ) {}
 
   async validateUser(email: string, password: string): Promise<any> {
-    const user = await this.usersService.findByCond({
+    const user = await this.userService.findByCond({
       email,
       password,
     });
@@ -22,12 +23,28 @@ export class AuthService {
     return null;
   }
 
+  generateJwtToken(data: { id: number; email: string }) {
+    const payload = { email: data.email, sub: data.id };
+    return this.jwtService.sign(payload); //jwt.io можно зайти посмотреть
+  }
+
   async login(user: UserEntity) {
     const { password, ...userData } = user;
-    const payload = { email: user.email, sub: user.id };
     return {
       ...userData,
-      access_token: this.jwtService.sign(payload), //jwt.io можно пер-и посмо-ть
+      token: this.generateJwtToken(userData),
     };
+  }
+
+  async register(dto: CreateUserDto) {
+    try {
+      const { password, ...user } = await this.userService.create(dto);
+      return {
+        ...user,
+        token: this.generateJwtToken(user),
+      };
+    } catch (err) {
+      throw new ForbiddenException('Ошибка при регистрации');
+    }
   }
 }

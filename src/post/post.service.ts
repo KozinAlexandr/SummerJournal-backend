@@ -44,24 +44,27 @@ export class PostService {
 
     qb.limit(dto.limit || 0);
     qb.take(dto.take || 10);
+
     if (dto.views) {
       qb.orderBy('views', dto.views);
     }
+
     if (dto.body) {
-      qb.andWhere('p.body LIKE :body'); //maybe ILIKE postgre  - LIKE mysql
+      qb.andWhere(`p.body LIKE :body`); //maybe ILIKE postgre  - LIKE mysql
     }
 
     if (dto.title) {
-      qb.andWhere('p.title LIKE :title');
+      qb.andWhere(`p.title LIKE :title`);
     }
+
     if (dto.tag) {
-      qb.andWhere('p.tags LIKE :tag');
+      qb.andWhere(`p.tags LIKE :tag`);
     }
-    //console.log(qb.getSql());
+
     qb.setParameters({
-      title: '%${dto.title}%',
-      body: '%${dto.body}%',
-      tag: '%${dto.tag}%',
+      title: `%${dto.title}%`,
+      body: `%${dto.body}%`,
+      tag: `%${dto.tag}%`,
       views: dto.views || '',
     });
 
@@ -71,7 +74,6 @@ export class PostService {
   }
 
   async findOne(id: number) {
-    //Инкрементируем views
     await this.repository
       .createQueryBuilder('posts')
       .whereInIds(id)
@@ -85,20 +87,23 @@ export class PostService {
   }
 
   async update(id: number, dto: UpdatePostDto) {
-    //Проверка есть статья или нету
+    //Проверяем есть статья или нету
     const find = await this.repository.findOne(+id);
+
     if (!find) {
       throw new NotFoundException('Статья не найдена');
     }
+
     return this.repository.update(id, dto);
   }
 
   async remove(id: number) {
-    //Проверка есть статья или нету
     const find = await this.repository.findOne(+id);
+
     if (!find) {
       throw new NotFoundException('Статья не найдена');
     }
+
     return this.repository.delete(id);
   }
 }
