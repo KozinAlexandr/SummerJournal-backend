@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -13,21 +17,14 @@ export class PostService {
     private repository: Repository<PostEntity>,
   ) {}
 
-  create(dto: CreatePostDto) {
-    return this.repository.save(dto);
-  }
-
   findAll() {
     return this.repository.find({
-      //возвращаем по последнему времени создания посты
       order: {
         createdAt: 'DESC',
       },
     });
   }
 
-  //find объеденяет все в массив записей, но мне это не нужно
-  //я хочу запрашивать что-то конкретное, поэтому use queryBuilder
   async popular() {
     const qb = this.repository.createQueryBuilder();
 
@@ -36,11 +33,16 @@ export class PostService {
 
     const [items, total] = await qb.getManyAndCount();
 
-    return { items, total };
+    return {
+      items,
+      total,
+    };
   }
 
   async search(dto: SearchPostDto) {
     const qb = this.repository.createQueryBuilder('p');
+
+    qb.leftJoinAndSelect('p.user', 'user');
 
     qb.limit(dto.limit || 0);
     qb.take(dto.take || 10);
@@ -50,7 +52,7 @@ export class PostService {
     }
 
     if (dto.body) {
-      qb.andWhere(`p.body LIKE :body`); //maybe ILIKE postgre  - LIKE mysql
+      qb.andWhere(`p.body LIKE :body`);
     }
 
     if (dto.title) {
@@ -86,22 +88,46 @@ export class PostService {
     return this.repository.findOne(id);
   }
 
-  async update(id: number, dto: UpdatePostDto) {
-    //Проверяем есть статья или нету
+  create(dto: CreatePostDto, userId: number) {
+    const firstParagraph = dto.body.find((obj) => obj.type === 'paragraph')
+      ?.data?.text;
+    return this.repository.save({
+      title: dto.title,
+      body: dto.body,
+      tags: dto.tags,
+      user: { id: userId },
+      description: firstParagraph || '',
+    });
+  }
+
+  async update(id: number, dto: UpdatePostDto, userId: number) {
     const find = await this.repository.findOne(+id);
 
     if (!find) {
       throw new NotFoundException('Статья не найдена');
     }
 
-    return this.repository.update(id, dto);
+    const firstParagraph = dto.body.find((obj) => obj.type === 'paragraph')
+      ?.data?.text;
+
+    return this.repository.update(id, {
+      title: dto.title,
+      body: dto.body,
+      tags: dto.tags,
+      user: { id: userId },
+      description: firstParagraph || '',
+    });
   }
 
-  async remove(id: number) {
+  async remove(id: number, userId: number) {
     const find = await this.repository.findOne(+id);
 
     if (!find) {
       throw new NotFoundException('Статья не найдена');
+    }
+
+    if (find.user.id !== userId) {
+      throw new ForbiddenException('Нет доступа к этой статье!');
     }
 
     return this.repository.delete(id);

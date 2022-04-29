@@ -12,18 +12,34 @@ export class CommentService {
     private repository: Repository<CommentEntity>,
   ) {}
 
-  create(dto: CreateCommentDto) {
-    return this.repository.save({
-      //делаем чтобы можно было запросить из конкретной
-      //статьи все записи, которые вней есть спомощью этой связи
+  async create(dto: CreateCommentDto, userId: number) {
+    const comment = await this.repository.save({
       text: dto.text,
       post: { id: dto.postId },
-      user: { id: 2 },
+      user: { id: userId },
     });
+
+    return this.repository.findOne({ id: comment.id }, { relations: ['user'] });
   }
 
-  findAll() {
-    return this.repository.find();
+  async findAll(postId: number) {
+    const qb = this.repository.createQueryBuilder('c');
+
+    if (postId) {
+      qb.where('c.postId = :postId', { postId });
+    }
+
+    const arr = await qb
+      .leftJoinAndSelect('c.post', 'post')
+      .leftJoinAndSelect('c.user', 'user')
+      .getMany();
+
+    return arr.map((obj) => {
+      return {
+        ...obj,
+        post: { id: obj.post.id, title: obj.post.title },
+      };
+    });
   }
 
   findOne(id: number) {

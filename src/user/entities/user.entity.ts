@@ -4,7 +4,9 @@ import {
   PrimaryGeneratedColumn,
   CreateDateColumn,
   UpdateDateColumn,
+  OneToMany,
 } from 'typeorm';
+import { CommentEntity } from '../../comment/entities/comment.entity';
 
 @Entity('users')
 export class UserEntity {
@@ -14,10 +16,17 @@ export class UserEntity {
   @Column()
   fullName: string;
 
-  @Column({ unique: true })
+  @Column({
+    unique: true,
+  })
   email: string;
-  //пароль опционален из-за подключение через соц сети
-  //если регаться через почту то он нужен ^^
+
+  @OneToMany(() => CommentEntity, (comment) => comment.user, {
+    eager: false,
+    nullable: true,
+  })
+  comments: CommentEntity[];
+
   @Column({ nullable: true })
   password?: string;
 
